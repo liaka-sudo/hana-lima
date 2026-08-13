@@ -35,6 +35,7 @@ const CATEGORIES = {
   ],
   expense: [
     { v: "materials", l: "חומרי גלם" },
+    { v: "casting", l: "יציקות" },
     { v: "booth", l: "דוכן/יריד" },
     { v: "training", l: "סדנה/השתלמות" },
     { v: "packaging", l: "אריזה (קופסאות/שקיות/מדבקות)" },
@@ -58,7 +59,7 @@ const ITEM_TYPES = [
   { v: "other", l: "אחר" },
 ];
 
-const PAYMENTS = { bit: "ביט", paybox: "פייבוקס", cash: "מזומן", other: "אחר" };
+const PAYMENTS = { bit: "ביט", paybox: "פייבוקס", cash: "מזומן", credit: "אשראי", other: "אחר" };
 
 const ORDER_STATUS = {
   new: "חדשה",
@@ -193,6 +194,8 @@ function wireEvents() {
     t.addEventListener("click", () => setFormType(t.dataset.type))
   );
   $("#tx-form").addEventListener("submit", handleSaveTx);
+  $("#tx-category").addEventListener("change", updateOtherField);
+  $("#tx-payment").addEventListener("change", updateOtherField);
 
   // קבלה
   $("#receipt-btn").addEventListener("click", () => $("#tx-receipt").click());
@@ -332,6 +335,17 @@ function setFormType(type) {
   fillCategories(type);
   const isIncome = type === "income";
   $("#item-type-field").classList.toggle("hidden", !isIncome);
+  // ברירת מחדל לאמצעי תשלום ברישום חדש: הוצאה=אשראי, הכנסה=ביט
+  if (!$("#tx-id").value) {
+    $("#tx-payment").value = isIncome ? "bit" : "credit";
+  }
+  updateOtherField();
+}
+
+// מציג שדה "פירוט (אחר)" כשקטגוריה או אמצעי תשלום = "אחר"
+function updateOtherField() {
+  const show = $("#tx-category").value === "other" || $("#tx-payment").value === "other";
+  $("#tx-other-field").classList.toggle("hidden", !show);
 }
 
 function openForm(type, tx = null) {
@@ -348,6 +362,8 @@ function openForm(type, tx = null) {
     $("#tx-category").value = tx.category || CATEGORIES[tx.type][0].v;
     $("#tx-item-type").value = tx.itemType || ITEM_TYPES[0].v;
     $("#tx-event").value = tx.event || "";
+    $("#tx-other").value = tx.otherDetail || "";
+    updateOtherField();
     if (tx.receiptId) {
       currentReceiptId = tx.receiptId;
       showReceiptExisting(tx.receiptId);
@@ -359,8 +375,10 @@ function openForm(type, tx = null) {
     $("#tx-amount").value = "";
     $("#tx-description").value = "";
     $("#tx-date").value = todayISO();
-    $("#tx-payment").value = "bit";
     $("#tx-event").value = "";
+    $("#tx-other").value = "";
+    // אמצעי התשלום נקבע ב-setFormType לפי סוג הרישום
+    updateOtherField();
   }
   showScreen("form");
   setTimeout(() => $("#tx-amount").focus(), 120);
@@ -395,6 +413,10 @@ async function handleSaveTx(e) {
     itemType: isIncome ? $("#tx-item-type").value : null,
     quantity: isIncome ? 1 : null, // כל פריט נספר כיחידה אחת
     event: $("#tx-event").value.trim() || null,
+    otherDetail:
+      $("#tx-category").value === "other" || $("#tx-payment").value === "other"
+        ? $("#tx-other").value.trim() || null
+        : null,
   };
 
   const id = $("#tx-id").value;
@@ -695,7 +717,7 @@ function renderList() {
       const meta = [
         fmtDate(t.date),
         payLabel(t.paymentMethod),
-        catLabel(t.type, t.category),
+        t.otherDetail ? catLabel(t.type, t.category) + " (" + escapeHTML(t.otherDetail) + ")" : catLabel(t.type, t.category),
         t.type === "income" && t.itemType ? itemLabel(t.itemType) : null,
         t.event ? "📍" + escapeHTML(t.event) : null,
       ].filter(Boolean).join(" · ");
@@ -1147,7 +1169,7 @@ function exportCSV() {
     toast("אין נתונים לתקופה שנבחרה");
     return;
   }
-  const headers = ["תאריך", "סוג", "סכום", "הערות", "אמצעי תשלום", "קטגוריה", "סוג פריט", "מכירה/אירוע"];
+  const headers = ["תאריך", "סוג", "סכום", "הערות", "אמצעי תשלום", "קטגוריה", "פירוט (אחר)", "סוג פריט", "מכירה/אירוע"];
   const rows = list
     .sort((a, b) => (a.date < b.date ? 1 : -1))
     .map((t) => [
@@ -1157,6 +1179,7 @@ function exportCSV() {
       t.description || "",
       payLabel(t.paymentMethod),
       catLabel(t.type, t.category),
+      t.otherDetail || "",
       t.type === "income" ? itemLabel(t.itemType) : "",
       t.event || "",
     ]);

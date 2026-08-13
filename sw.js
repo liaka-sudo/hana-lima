@@ -5,7 +5,7 @@
 //  את הנתונים עצמם מנהל Firestore עם offline persistence.
 // ============================================================
 
-const CACHE = "hana-lima-v4";
+const CACHE = "hana-lima-v5";
 const CORE = [
   "./",
   "./index.html",
