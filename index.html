@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#b8925a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="HANA LIMA" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="manifest" href="manifest.json" />
+  <title>HANA LIMA · ניהול הכנסות והוצאות</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============ מסך טעינה ============ -->
+  <div id="splash" class="splash">
+    <div class="brand-mark">
+      <span class="brand-name">HANA LIMA</span>
+      <span class="brand-sub">handmade jewelry</span>
+    </div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ============ מסך התחברות ============ -->
+  <section id="auth-screen" class="auth-screen hidden">
+    <div class="auth-card">
+      <div class="brand-mark">
+        <span class="brand-name">HANA LIMA</span>
+        <span class="brand-sub">ניהול הכנסות והוצאות</span>
+      </div>
+      <form id="login-form" class="auth-form" novalidate>
+        <label class="field">
+          <span>אימייל</span>
+          <input type="email" id="login-email" inputmode="email" autocomplete="username" placeholder="you@example.com" required />
+        </label>
+        <label class="field">
+          <span>סיסמה</span>
+          <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••" required />
+        </label>
+        <p id="login-error" class="form-error" role="alert"></p>
+        <button type="submit" class="btn btn-primary btn-block" id="login-btn">התחברות</button>
+      </form>
+      <p id="config-warning" class="config-warning hidden">
+        ⚠️ עדיין לא הוגדרו פרטי החיבור ל-Firebase. ראי את קובץ <b>README.md</b>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ אפליקציה ראשית ============ -->
+  <main id="app" class="app hidden">
+
+    <!-- ---------- מסך בית ---------- -->
+    <section class="screen" id="screen-home" data-screen="home">
+      <header class="screen-head">
+        <div class="brand-mark small">
+          <span class="brand-name">HANA LIMA</span>
+        </div>
+        <button class="icon-btn" id="logout-btn" title="התנתקות" aria-label="התנתקות">⎋</button>
+      </header>
+
+      <div class="hero-card" id="month-card">
+        <span class="hero-label">רווח/הפסד — <span id="current-month-label">החודש</span></span>
+        <span class="hero-amount" id="month-profit">₪0</span>
+        <div class="hero-breakdown">
+          <span class="up">הכנסות <b id="month-income">₪0</b></span>
+          <span class="down">הוצאות <b id="month-expense">₪0</b></span>
+        </div>
+      </div>
+
+      <div class="stat-card" id="total-card">
+        <span class="stat-label">רווח/הפסד מצטבר מההתחלה</span>
+        <span class="stat-amount" id="total-profit">₪0</span>
+      </div>
+
+      <div class="quick-actions">
+        <button class="btn btn-income" data-add="income">+ הכנסה</button>
+        <button class="btn btn-expense" data-add="expense">+ הוצאה</button>
+        <button class="btn btn-order" data-add-order>+ הזמנה</button>
+      </div>
+
+      <!-- הזמנות פתוחות (שטרם שולמו) -->
+      <div class="panel hidden" id="home-orders">
+        <div class="panel-head home-orders-head">
+          <div>
+            <h2>הזמנות שטרם שולמו</h2>
+            <span class="panel-sub" id="home-orders-total"></span>
+          </div>
+          <button class="link-btn" id="home-orders-manage">ניהול ›</button>
+        </div>
+        <div id="home-orders-list" class="home-orders-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>מגמה חודשית</h2>
+          <span class="panel-sub">רווח לפי חודש</span>
+        </div>
+        <div id="trend-chart" class="trend-chart"></div>
+      </div>
+    </section>
+
+    <!-- ---------- מסך טופס הוספה/עריכה של תנועה ---------- -->
+    <section class="screen hidden" id="screen-form" data-screen="form">
+      <header class="screen-head">
+        <button class="icon-btn" id="form-back" aria-label="חזרה">→</button>
+        <h1 id="form-title">רישום חדש</h1>
+        <span class="spacer"></span>
+      </header>
+
+      <form id="tx-form" class="tx-form" novalidate>
+        <input type="hidden" id="tx-id" />
+
+        <div class="toggle-group" role="tablist">
+          <button type="button" class="toggle income active" data-type="income" role="tab">הכנסה</button>
+          <button type="button" class="toggle expense" data-type="expense" role="tab">הוצאה</button>
+        </div>
+
+        <label class="field field-amount">
+          <span>סכום (₪)</span>
+          <input type="number" id="tx-amount" inputmode="decimal" step="0.01" min="0" placeholder="0" required />
+        </label>
+
+        <label class="field">
+          <span>קטגוריה</span>
+          <select id="tx-category"></select>
+        </label>
+
+        <label class="field" id="item-type-field">
+          <span>סוג פריט</span>
+          <select id="tx-item-type"></select>
+        </label>
+
+        <label class="field">
+          <span>תאריך</span>
+          <input type="date" id="tx-date" required />
+        </label>
+
+        <label class="field">
+          <span>אמצעי תשלום</span>
+          <select id="tx-payment">
+            <option value="bit">ביט</option>
+            <option value="paybox">פייבוקס</option>
+            <option value="cash">מזומן</option>
+            <option value="other">אחר</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>מכירה/אירוע (לא חובה)</span>
+          <input type="text" id="tx-event" list="events-list" placeholder="למשל: יריד rewine" maxlength="60" />
+        </label>
+
+        <div class="field">
+          <span>קבלה (לא חובה)</span>
+          <div class="receipt-box">
+            <input type="file" id="tx-receipt" accept="image/*" capture="environment" hidden />
+            <button type="button" class="btn btn-secondary receipt-add" id="receipt-btn">📎 צילום / העלאת קבלה</button>
+            <div class="receipt-preview hidden" id="receipt-preview">
+              <img id="receipt-thumb" alt="קבלה" />
+              <button type="button" class="icon-btn" id="receipt-remove" aria-label="הסרת קבלה">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>הערות</span>
+          <input type="text" id="tx-description" placeholder="למשל: שרשרת פנינה — יריד תל אביב" maxlength="140" />
+        </label>
+
+        <p id="form-error" class="form-error" role="alert"></p>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-block" id="save-tx">שמירה</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ---------- מסך תנועות ---------- -->
+    <section class="screen hidden" id="screen-list" data-screen="list">
+      <header class="screen-head">
+        <h1>תנועות</h1>
+        <span class="spacer"></span>
+      </header>
+
+      <div class="list-controls">
+        <input type="month" id="filter-month" class="month-picker" />
+        <input type="search" id="search-box" class="search-box" placeholder="חיפוש בהערות/קטגוריה…" />
+      </div>
+
+      <div class="list-summary" id="list-summary"></div>
+
+      <div id="tx-list" class="tx-list"></div>
+
+      <div class="empty-state hidden" id="list-empty">
+        <div class="empty-emoji">🧾</div>
+        <p>אין תנועות לחודש הזה עדיין.</p>
+        <button class="btn btn-primary" data-add="income">להוסיף רישום ראשון</button>
+      </div>
+    </section>
+
+    <!-- ---------- מסך הזמנות ---------- -->
+    <section class="screen hidden" id="screen-orders" data-screen="orders">
+      <header class="screen-head">
+        <button class="icon-btn" id="orders-back" aria-label="חזרה">→</button>
+        <h1>הזמנות</h1>
+        <button class="icon-btn" id="add-order-btn" aria-label="הזמנה חדשה" title="הזמנה חדשה">＋</button>
+      </header>
+
+      <div class="pending-banner" id="orders-pending-banner"></div>
+
+      <div id="orders-list" class="orders-list"></div>
+
+      <div class="empty-state hidden" id="orders-empty">
+        <div class="empty-emoji">📦</div>
+        <p>אין הזמנות פתוחות. הוסיפי הזמנה שממתינה לתשלום.</p>
+        <button class="btn btn-primary" id="add-order-btn-2">+ הזמנה חדשה</button>
+      </div>
+    </section>
+
+    <!-- ---------- מסך טופס הזמנה ---------- -->
+    <section class="screen hidden" id="screen-order-form" data-screen="order-form">
+      <header class="screen-head">
+        <button class="icon-btn" id="order-form-back" aria-label="חזרה">→</button>
+        <h1 id="order-form-title">הזמנה חדשה</h1>
+        <span class="spacer"></span>
+      </header>
+
+      <form id="order-form" class="tx-form" novalidate>
+        <input type="hidden" id="order-id" />
+
+        <label class="field">
+          <span>שם הלקוח/ה</span>
+          <input type="text" id="order-name" placeholder="שם מלא" maxlength="80" required />
+        </label>
+
+        <label class="field field-amount">
+          <span>סכום (₪)</span>
+          <input type="number" id="order-amount" inputmode="decimal" step="0.01" min="0" placeholder="0" required />
+        </label>
+
+        <label class="field">
+          <span>ערוץ / קטגוריה</span>
+          <select id="order-category"></select>
+        </label>
+
+        <label class="field">
+          <span>סוג פריט</span>
+          <select id="order-item-type"></select>
+        </label>
+
+        <label class="field">
+          <span>מכירה/אירוע (לא חובה)</span>
+          <input type="text" id="order-event" list="events-list" placeholder="למשל: יריד rewine" maxlength="60" />
+        </label>
+
+        <label class="field">
+          <span>תאריך הזמנה</span>
+          <input type="date" id="order-date" required />
+        </label>
+
+        <label class="field">
+          <span>סטטוס</span>
+          <select id="order-status">
+            <option value="new">חדשה</option>
+            <option value="prep">בהכנה</option>
+            <option value="ready">מוכנה</option>
+            <option value="delivered">נמסרה</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>הערות</span>
+          <input type="text" id="order-notes" placeholder="פרטים נוספים על ההזמנה" maxlength="140" />
+        </label>
+
+        <p id="order-error" class="form-error" role="alert"></p>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-block" id="save-order">שמירת הזמנה</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ---------- מסך דוחות ---------- -->
+    <section class="screen hidden" id="screen-reports" data-screen="reports">
+      <header class="screen-head">
+        <h1>דוחות</h1>
+        <span class="spacer"></span>
+      </header>
+
+      <div class="list-controls">
+        <input type="month" id="report-month" class="month-picker" />
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>רווח/הפסד לחודש</h2></div>
+        <div class="report-pl">
+          <div class="pl-row up"><span>הכנסות</span><b id="rep-income">₪0</b></div>
+          <div class="pl-row down"><span>הוצאות</span><b id="rep-expense">₪0</b></div>
+          <div class="pl-row total"><span>רווח/הפסד</span><b id="rep-profit">₪0</b></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>פילוח הכנסות לפי ערוץ מכירה</h2></div>
+        <div id="rep-channel" class="bar-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>רווח לפי מכירה/אירוע</h2>
+          <span class="panel-sub">הכנסות פחות הוצאות לכל אירוע</span>
+        </div>
+        <div id="rep-event" class="event-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>פילוח הכנסות לפי אמצעי תשלום</h2></div>
+        <div id="rep-payment" class="bar-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>פילוח הוצאות לפי קטגוריה</h2></div>
+        <div id="rep-expense-cat" class="bar-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>הכי נמכר — לפי סוג פריט</h2>
+          <span class="panel-sub">כמות יחידות ו-₪</span>
+        </div>
+        <div id="rep-item-type" class="bar-list"></div>
+      </div>
+    </section>
+
+    <!-- ---------- מסך רשימת קניות ---------- -->
+    <section class="screen hidden" id="screen-shopping" data-screen="shopping">
+      <header class="screen-head">
+        <button class="icon-btn" id="shopping-back" aria-label="חזרה">→</button>
+        <h1>רשימת קניות / חומרים</h1>
+        <span class="spacer"></span>
+      </header>
+
+      <form id="shopping-form" class="shopping-form">
+        <input type="text" id="shopping-name" placeholder="מה צריך לקנות?" maxlength="80" required />
+        <button type="submit" class="btn btn-primary">הוספה</button>
+      </form>
+
+      <div id="shopping-list" class="shopping-list"></div>
+
+      <div class="empty-state hidden" id="shopping-empty">
+        <div class="empty-emoji">🛍️</div>
+        <p>הרשימה ריקה. הוסיפי חומרים שצריך לקנות.</p>
+      </div>
+    </section>
+
+    <!-- ---------- מסך הגדרות ---------- -->
+    <section class="screen hidden" id="screen-settings" data-screen="settings">
+      <header class="screen-head">
+        <h1>הגדרות</h1>
+        <span class="spacer"></span>
+      </header>
+
+      <div class="panel">
+        <div class="panel-head"><h2>ניווט</h2></div>
+        <button class="btn btn-secondary btn-block nav-btn" data-goto-btn="orders">📦 הזמנות</button>
+        <button class="btn btn-secondary btn-block nav-btn" data-goto-btn="shopping">🛍️ רשימת קניות / חומרים</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>ייצוא נתונים</h2>
+          <span class="panel-sub">הורדת התנועות לקובץ שנפתח ב-Excel.</span>
+        </div>
+        <label class="field">
+          <span>תקופה</span>
+          <select id="export-scope">
+            <option value="all">הכל</option>
+            <option value="month">חודש מסוים</option>
+            <option value="year">שנה מסוימת</option>
+          </select>
+        </label>
+        <label class="field hidden" id="export-month-field">
+          <span>בחרי חודש</span>
+          <input type="month" id="export-month" />
+        </label>
+        <label class="field hidden" id="export-year-field">
+          <span>בחרי שנה</span>
+          <input type="number" id="export-year" inputmode="numeric" min="2000" max="2100" placeholder="2026" />
+        </label>
+        <button class="btn btn-primary btn-block" id="export-btn">ייצוא ל-CSV / Excel</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>חשבון</h2></div>
+        <p class="settings-account" id="account-email"></p>
+        <button class="btn btn-ghost btn-block" id="logout-btn-2">התנתקות</button>
+      </div>
+
+      <p class="version-note">HANA LIMA · v2.0</p>
+    </section>
+
+    <!-- ---------- ניווט תחתון ---------- -->
+    <nav class="tabbar">
+      <button class="tab active" data-goto="home"><span class="ti">🏠</span><span>בית</span></button>
+      <button class="tab" data-goto="list"><span class="ti">🧾</span><span>תנועות</span></button>
+      <button class="tab tab-add" data-add="income"><span class="ti-plus">＋</span></button>
+      <button class="tab" data-goto="reports"><span class="ti">📊</span><span>דוחות</span></button>
+      <button class="tab" data-goto="settings"><span class="ti">⚙️</span><span>עוד</span></button>
+    </nav>
+
+    <!-- רשימת אירועים/מכירות להשלמה אוטומטית -->
+    <datalist id="events-list"></datalist>
+  </main>
+
+  <!-- ============ מודל אישור כללי ============ -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3 id="confirm-title">אישור</h3>
+      <p id="confirm-text"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="confirm-cancel">ביטול</button>
+        <button class="btn btn-danger" id="confirm-ok">אישור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ מודל "שולם" (אמצעי תשלום + תאריך) ============ -->
+  <div id="pay-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>סימון הזמנה כשולמה</h3>
+      <p id="pay-modal-sub"></p>
+      <label class="field">
+        <span>אמצעי תשלום</span>
+        <select id="pay-method">
+          <option value="bit">ביט</option>
+          <option value="paybox">פייבוקס</option>
+          <option value="cash">מזומן</option>
+          <option value="other">אחר</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>תאריך תשלום</span>
+        <input type="date" id="pay-date" />
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="pay-cancel">ביטול</button>
+        <button class="btn btn-primary" id="pay-confirm">שולם ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ מודל תצוגת קבלה ============ -->
+  <div id="receipt-modal" class="modal-overlay hidden">
+    <div class="modal modal-image">
+      <img id="receipt-full" alt="קבלה" />
+      <button class="btn btn-ghost btn-block" id="receipt-close">סגירה</button>
+    </div>
+  </div>
+
+  <!-- ============ טוסט הודעות ============ -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

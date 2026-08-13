@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// ============================================================
+//  HANA LIMA — חוקי אבטחה של Firestore
+//  כל הנתונים נמצאים תחת users/{userId}, וניתן לגשת אליהם
+//  רק אם המשתמש מחובר וה-uid שלו תואם.
+//  כך רק החשבון שלך יכול לקרוא ולכתוב.
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    // כל שאר הנתיבים חסומים כברירת מחדל
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
